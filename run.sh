@@ -49,6 +49,15 @@ read -r -d '' pipeline << EOM
         "dimensions":"X,Y,Z,HeightAboveGround"
     },
     {
+        "type": "filters.ferry",
+        "dimensions":"ClusterID => DBScan"
+    },
+    {
+        "type":"filters.cluster",
+        "min_points":4,
+        "tolerance":2.0
+    },
+    {
         "type": "writers.las",
         "filename":"clustered.laz",
         "forward":"all",
