@@ -1,0 +1,121 @@
+[
+
+            // Reproject to UTM
+            {
+                "out_srs": "EPSG:26915",
+                "type": "filters.reprojection"
+            },
+
+            // Throw out low noise that's already classified
+            {
+
+                "limits": "Classification![7:7]",
+                "type": "filters.range"
+            },
+
+            // Throw out high noise and anything above it
+            {
+                "limits": "Classification![18:]",
+                "type": "filters.range"
+            },
+
+            // Believe anything that's been classified water and throw it out
+            // of consideration
+            {
+                "limits": "Classification![9:9]",
+                "type": "filters.range"
+            },
+
+            // Throw out  NumReturns > 1
+            {
+                "groups":"only",
+                "type": "filters.returns"
+            },
+
+            // Filter out low noise using 20m
+            {
+
+                "cell":20.0,
+                "type": "filters.elm"
+            },
+
+            // Filter out other noise
+            {
+
+                "type": "filters.outlier",
+                "where":"Classification != 7"
+            },
+
+            // Clear off any more noise we classified
+            {
+
+                "limits": "Classification![7:7]",
+                "type": "filters.range"
+            },
+
+            // Wipe all classifications
+
+            {
+                "type":"filters.assign",
+                "assignment":"Classification[:]=1"
+            },
+
+            // Run SMRF
+            {
+                "type":"filters.smrf"
+            },
+
+
+            // Compute features
+            {
+                "type":"filters.covariancefeatures",
+                "knn":10,
+                "threads": 2,
+                "feature_set": "Planarity, Scattering,Linearity"
+            },
+
+            // Compute HAG
+            {
+                "type":"filters.hag_nn"
+            },
+
+            // Set ground for underbrush
+            {
+                "type":"filters.assign",
+                "value":"Classification=2 WHERE HeightAboveGround < 0.5"
+            },
+
+            // Set buildings
+            {
+                "type":"filters.assign",
+                "value":"Classification=6 WHERE Scattering < 0.35 && (Planarity > 0.6 || Linearity > 0.7)  && (Classification != 2)"
+            },
+
+            // Set vegetation
+            {
+                "type":"filters.assign",
+                "value":"Classification=10 WHERE Scattering > 0.35 && Planarity < 0.6 && Linearity < 0.7 && !(Classification == 2 || Classification == 6)"
+            },
+
+            // Set low vegetation
+            {
+                "type":"filters.assign",
+                "value":"Classification=3 WHERE Classification == 10 && HeightAboveGround < 2.0"
+            },
+
+            // Set med vegetation
+            {
+                "type":"filters.assign",
+                "value":"Classification=4 WHERE Classification == 10 && HeightAboveGround >= 2.0 && HeightAboveGround < 4.0"
+            },
+
+            // Set high vegetation
+            {
+                "type":"filters.assign",
+                "value":"Classification=5 WHERE Classification == 10 && HeightAboveGround >= 4.0 "
+            }
+
+
+
+
+    ]

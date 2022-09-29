@@ -1,0 +1,17 @@
+{
+    "pipeline": [
+        {
+            "bounds": "([-10430428.490, -10427789.208], [ 5080885.258,5082866.057])",
+            "filename": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/IA_FullState/ept.json",
+            "type": "readers.ept",
+            "tag": "before"
+        },
+
+            {
+                "filename": "before.copc.laz",
+                "inputs": [ "before" ],
+                "tag": "copc_writer",
+                "type": "writers.copc"
+            }
+    ]
+}
