@@ -30,11 +30,9 @@ read -r -d '' pipeline << EOM
     "merged.copc.laz"
 ]
 EOM
-
-
-# cluster data
 echo $pipeline | pdal pipeline $DEBUG --stdin
 
+# cluster data
 read -r -d '' pipeline << EOM
 [
     {
@@ -62,11 +60,13 @@ read -r -d '' pipeline << EOM
     }
 ]
 EOM
+echo $pipeline | pdal pipeline $DEBUG --stdin
 
 
 if [ -z ${CLEANUP+x} ]; then
     echo "CLEANUP environment variable not set. Not erasing intermediate output";
 else
+    echo "CLEANUP environment variable set. Erasing intermediate output";
     rm before-gbv.copc.laz
     rm after-gbv.copc.laz
     rm merged.copc.laz
