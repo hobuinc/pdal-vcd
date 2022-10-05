@@ -21,8 +21,8 @@ def extract_cluster(args):
     e = pipeline.execute()
     arr = pipeline.arrays[0]
 
-    if not len(arr):
-        print (f"Cluster {args.cluster_id} does not have any points")
+    if len(arr) < 5:
+        print (f"Not enough points to cluster {args.cluster_id}. We have {len(arr)} and need 5")
         sys.exit(1)
 
     x = arr['X']

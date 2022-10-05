@@ -44,7 +44,7 @@ read -r -d '' pipeline << EOM
     },
     {
         "type":"filters.dbscan",
-        "min_points":10,
+        "min_points":125,
         "eps":2.0,
         "dimensions":"X,Y,Z,HeightAboveGround"
     },
@@ -54,7 +54,7 @@ read -r -d '' pipeline << EOM
     },
     {
         "type":"filters.cluster",
-        "min_points":4,
+        "min_points":125,
         "tolerance":2.0
     },
     {
