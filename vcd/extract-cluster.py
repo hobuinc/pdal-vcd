@@ -5,14 +5,60 @@ import sys
 
 import argparse
 import sys
-from scipy.spatial import Delaunay, ConvexHull
 import numpy as np
-import meshio
+import trimesh
+
+import shapefile
+from shapefile import TRIANGLE_STRIP, TRIANGLE_FAN, RING, OUTER_RING, FIRST_RING
 
 # python vcd/extract-cluster.py clustered.laz --cluster_dimension=DBScan 2972
 
+# https://pypi.org/project/alphashape/
+# https://trimsh.org/examples.quick_start.html
+
 def scale(a, bounds=200):
     return np.interp(a, (a.min(), a.max()), (-bounds, +bounds))
+
+
+def add_polygon(shpfile, mesh):
+    shpfile.multipatch(mesh.triangles, partTypes=[RING]* len(mesh.triangles)) # one type for each part
+    shpfile.record(mesh.volume, mesh.area)
+
+def create_shapefile(filename, crs):
+    w = shapefile.Writer(filename)
+    w.field('volume', 'N', decimal=2)
+    w.field('area', 'N', decimal=2)
+
+    # Save CRS WKT
+    with open(filename+'.prj', 'w') as f:
+        f.write(crs)
+
+
+    # Save CRS WKT
+    with open(filename+'.prj', 'w') as f:
+        f.write(crs)
+
+    return w
+
+
+def extract_crs(pipeline):
+    """Extract CRS from a PDAL pipeline for readers.las output as ESRI WKT1 for shapefile output"""
+
+    from pyproj import CRS
+    from pyproj.enums import WktVersion
+
+    metadata = pipeline.metadata['metadata']
+
+    if 'readers.las' in metadata:
+        wkt = metadata['readers.las']['comp_spatialreference']
+    elif 'readers.bpf' in metadata:
+        raise NotImplementedError
+    else:
+        wkt = ''
+
+    crs = CRS(wkt)
+    output = crs.to_wkt(WktVersion.WKT1_ESRI)
+    return output
 
 def extract_cluster(args):
     pipeline = pdal.Reader(filename = args.input)
@@ -32,15 +78,21 @@ def extract_cluster(args):
 
 
     points = np.vstack((x,y,z)).T
+    wkt_esri = extract_crs(pipeline)
+
     print (f'computing Delaunay of {len(points)} points')
 
+    pc = trimesh.points.PointCloud(points)
 
-    # https://stackoverflow.com/a/21343991/498396
-    tri = Delaunay(points)
+    filename = f"{args.cluster_dimension}-{args.cluster_id}"
+    hull = pc.convex_hull
 
-    # compute the convex hull of the points
+    shpfile = create_shapefile(filename, wkt_esri)
 
-    meshio.write(f"{args.cluster_dimension}-{args.cluster_id}.ply", mesh=meshio.Mesh(points=points, cells = [("quad", tri.simplices)]))
+    add_polygon(shpfile, hull)
+    shpfile.close()
+
+
 
 
 if __name__ == '__main__':
