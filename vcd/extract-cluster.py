@@ -11,13 +11,10 @@ import trimesh
 import shapefile
 from shapefile import TRIANGLE_STRIP, TRIANGLE_FAN, RING, OUTER_RING, FIRST_RING
 
-# python vcd/extract-cluster.py clustered.laz --cluster_dimension=DBScan 2972
+# python vcd/extract-cluster.py clustered.laz --cluster_dimension=DBScan
 
 # https://pypi.org/project/alphashape/
 # https://trimsh.org/examples.quick_start.html
-
-def scale(a, bounds=200):
-    return np.interp(a, (a.min(), a.max()), (-bounds, +bounds))
 
 
 def add_polygon(shpfile, mesh):
@@ -60,15 +57,28 @@ def extract_crs(pipeline):
     output = crs.to_wkt(WktVersion.WKT1_ESRI)
     return output
 
-def extract_cluster(args):
+def extract_clusters(args):
     pipeline = pdal.Reader(filename = args.input)
-    pipeline |= pdal.Filter.range(limits=f"{args.cluster_dimension}[{args.cluster_id}:{args.cluster_id}]")
+    pipeline |= pdal.Filter.groupby(dimension = args.cluster_dimension)
 
     e = pipeline.execute()
-    arr = pipeline.arrays[0]
+    print (f'Extracted {len(pipeline.arrays)} clusters')
+
+    filename = f"{args.cluster_dimension}"
+    wkt_esri = extract_crs(pipeline)
+    shpfile = create_shapefile(filename, wkt_esri)
+
+    for array in pipeline.arrays:
+        add_cluster(shpfile, array, args)
+
+    shpfile.close()
+
+
+def add_cluster(shpfile, arr, args):
 
     if len(arr) < 5:
-        print (f"Not enough points to cluster {args.cluster_id}. We have {len(arr)} and need 5")
+        cluster_id = arr[0][args.cluster_dimension]
+        print (f"Not enough points to cluster {cluster_id}. We have {len(arr)} and need 5")
         sys.exit(1)
 
     x = arr['X']
@@ -78,19 +88,14 @@ def extract_cluster(args):
 
 
     points = np.vstack((x,y,z)).T
-    wkt_esri = extract_crs(pipeline)
 
     print (f'computing Delaunay of {len(points)} points')
 
     pc = trimesh.points.PointCloud(points)
 
-    filename = f"{args.cluster_dimension}-{args.cluster_id}"
     hull = pc.convex_hull
 
-    shpfile = create_shapefile(filename, wkt_esri)
-
     add_polygon(shpfile, hull)
-    shpfile.close()
 
 
 
@@ -98,10 +103,9 @@ def extract_cluster(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Extract cluster with given ID from LAZ file')
     parser.add_argument('input', help='Input file to read')
-    parser.add_argument('cluster_id', type=int, help='ID of the cluster to extract')
     parser.add_argument('--cluster_dimension', default="ClusterID", help='Dimension to use for selection')
     args = parser.parse_args()
 
-    extract_cluster(args)
+    extract_clusters(args)
 
 
