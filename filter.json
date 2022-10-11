@@ -82,7 +82,7 @@
             // Set ground for underbrush
             {
                 "type":"filters.assign",
-                "value":"Classification=2 WHERE HeightAboveGround < 0.5"
+                "value":"Classification=2 WHERE HeightAboveGround < 0.25"
             },
 
             // Set buildings
@@ -100,19 +100,19 @@
             // Set low vegetation
             {
                 "type":"filters.assign",
-                "value":"Classification=3 WHERE Classification == 10 && HeightAboveGround < 2.0"
+                "value":"Classification=3 WHERE Classification == 10 && HeightAboveGround < 0.25"
             },
 
             // Set med vegetation
             {
                 "type":"filters.assign",
-                "value":"Classification=4 WHERE Classification == 10 && HeightAboveGround >= 2.0 && HeightAboveGround < 4.0"
+                "value":"Classification=4 WHERE Classification == 10 && HeightAboveGround >= 0.25 && HeightAboveGround < 3.0"
             },
 
             // Set high vegetation
             {
                 "type":"filters.assign",
-                "value":"Classification=5 WHERE Classification == 10 && HeightAboveGround >= 4.0 "
+                "value":"Classification=5 WHERE Classification == 10 && HeightAboveGround >= 3.0 "
             }
 
 

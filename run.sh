@@ -42,6 +42,7 @@ read -r -d '' pipeline << EOM
     {
         "type": "filters.hag_delaunay"
     },
+
     {
         "type":"filters.dbscan",
         "min_points":125,
@@ -65,11 +66,23 @@ read -r -d '' pipeline << EOM
         "minor_version":4,
         "where": "Classification == 2",
         "where":"HeightAboveGround > 1.0"
-
+    },
+    {
+        "type": "writers.las",
+        "filename":"clustered-low.laz",
+        "forward":"all",
+        "extra_dims":"all",
+        "minor_version":4,
+        "where": "Classification == 2",
+        "where":"HeightAboveGround < 1.0"
     }
 ]
 EOM
 echo $pipeline | pdal pipeline $DEBUG --stdin
+
+python vcd/extract-cluster.py clustered.laz
+pdal translate clustered.laz diff.tif --writers.gdal.resolution=2.0 --writers.gdal.dimension=HeightAboveGround
+pdal translate clustered.laz clusterid.tif --writers.gdal.resolution=2.0 --writers.gdal.dimension=ClusterID
 
 
 if [ -z ${CLEANUP+x} ]; then
